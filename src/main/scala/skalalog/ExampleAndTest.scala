@@ -1,7 +1,7 @@
 package skalalog
 
-import Grammar._
 import Unification._
+import parser._
 
 object ExampleAndTest extends App {
   val a = Atom("a")

@@ -1,6 +1,6 @@
 package skalalog
 
-import skalalog.Grammar._
+import parser._
 
 object Unification {
 
