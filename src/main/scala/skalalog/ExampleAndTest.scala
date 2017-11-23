@@ -3,15 +3,26 @@ package skalalog
 import Unification._
 import parser._
 
+import scala.util.parsing.input.CharSequenceReader
+
 object ExampleAndTest extends App {
-  val a = Atom("a")
-  val b = Atom("b")
-  val c = Atom("c")
-  val A = Variable("A")
-  val B = Variable("B")
 
-  val parent1 = CompoundTerm(Atom("parent"),List(a,b))
-  val parent2 = CompoundTerm(Atom("parent"),List(a,A))
+  val parser = new PrologParser {}
 
-  println(parent1 === parent2)
+  import parser._
+
+  val s =
+    """
+      |parent(bob,anne).
+      |parent(bob,jean).
+      |male(bob).
+      |male(jean).
+      |female(anne).
+      |father(A) :- parent(A,_),male(A).
+    """.stripMargin
+
+  parser.parse(program, new PackratReader[Char](new CharSequenceReader(s))) match {
+    case Success(result, _) => println(result.clauses.mkString("\n"))
+    case error: NoSuccess => println(s"error on parsing $s : $error")
+  }
 }
