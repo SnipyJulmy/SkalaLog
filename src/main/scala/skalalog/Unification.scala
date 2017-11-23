@@ -17,13 +17,11 @@ object Unification {
       case Rule(head, body) => head match {
         case Left(atom) => q === atom match {
           case Some(theta) =>
-            // TODO : Unify with the rest of the clause
             unify(q, body, theta)
           case None => None
         }
         case Right(compoundTerm) => q === compoundTerm match {
           case Some(theta) =>
-            // TODO : Unify with the rest of the clause
             unify(q, body, theta)
           case None => None
         }

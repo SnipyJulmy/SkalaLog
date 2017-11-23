@@ -26,7 +26,7 @@ object ExampleAndTest extends App {
     case error: NoSuccess => throw new ParserException(error.msg)
   }
 
-  val q = parser.parse(query, new PackratReader[Char](new CharSequenceReader("male(A)."))) match {
+  val q = parser.parse(query, new PackratReader[Char](new CharSequenceReader("father(bob)."))) match {
     case Success(result, next) => result
     case error: NoSuccess => throw new ParserException(error.msg)
   }
