@@ -61,6 +61,8 @@ trait PrologParser extends RegexParsers with PackratParsers {
     lp ~> (term ~ ("," ~> term)) <~ rp ^^ { case t1 ~ t2 => PrologSequence(t1, t2) }
   }
 
+  lazy val query: Parser[Query] = rep(clause) ~ term ^^ { case cs ~ t => Query(cs, t) }
+
   lazy val lp = "("
   lazy val rp = ")"
   lazy val lcb = "{"

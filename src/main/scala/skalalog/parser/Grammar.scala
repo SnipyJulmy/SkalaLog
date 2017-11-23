@@ -52,4 +52,4 @@ sealed trait Clause
 case class Rule(head: Either[Atom, CompoundTerm], body: List[Term]) extends Clause
 case class Predicate(head: Either[Atom, CompoundTerm]) extends Clause
 
-case class Query(predicates: List[Clause])
+case class Query(clauses: List[Clause], question : Term)
