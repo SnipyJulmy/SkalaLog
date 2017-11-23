@@ -49,7 +49,7 @@ case class PrologSequence(left: Term, right: Term) extends Term {
 // Program and other key component
 case class Program(clauses: List[Clause])
 sealed trait Clause
-case class Rule(head: Either[Atom, CompoundTerm], body: List[Predicate]) extends Clause
+case class Rule(head: Either[Atom, CompoundTerm], body: List[Term]) extends Clause
 case class Predicate(head: Either[Atom, CompoundTerm]) extends Clause
 
 case class Query(predicates: List[Clause])
