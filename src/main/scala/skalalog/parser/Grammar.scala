@@ -1,10 +1,21 @@
 package skalalog.parser
 
+import skalalog.NoFunctorException
+
 import scala.collection.immutable
 
 /* Grammar representation of SkalaLog */
 
 sealed trait Term {
+  def functor: Atom = this match {
+    case atom: Atom => atom
+    case Variable(identifier) => throw new NoFunctorException(s"no functor for variable $identifier")
+    case CompoundTerm(atom, _) => atom
+    case _: Number => throw new NoFunctorException(s"number don't have functor")
+    case _: PrologList => Atom(".")
+    case _: PrologString => Atom(".")
+    case _: PrologSequence => Atom(",")
+  }
 
   def arity: Int = this match {
     case _: Atom => 0
@@ -48,8 +59,14 @@ case class PrologSequence(left: Term, right: Term) extends Term {
 
 // Program and other key component
 case class Program(clauses: List[Clause])
-sealed trait Clause
+sealed trait Clause {
+  val head: Either[Atom, CompoundTerm]
+  val functor: Atom = head match {
+    case Left(value) => value
+    case Right(value) => value.atom
+  }
+}
 case class Rule(head: Either[Atom, CompoundTerm], body: List[Term]) extends Clause
 case class Predicate(head: Either[Atom, CompoundTerm]) extends Clause
 
-case class Query(clauses: List[Clause], question : Term)
+case class Query(clauses: List[Clause], question: Term)

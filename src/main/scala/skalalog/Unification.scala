@@ -7,8 +7,32 @@ object Unification {
   // type definition for theta, which is basically a map from variable to term...
   type Theta = Map[Variable, Term]
 
+  def unify(query: Query, clause: Clause): Option[Theta] = {
+    val q = query.question
+    clause match {
+      case Predicate(head) => head match {
+        case Left(atom) => q === atom
+        case Right(compoundTerm) => q === compoundTerm
+      }
+      case Rule(head, body) => head match {
+        case Left(atom) => q === atom match {
+          case Some(theta) =>
+            // TODO : Unify with the rest of the clause
+            unify(q, body, theta)
+          case None => None
+        }
+        case Right(compoundTerm) => q === compoundTerm match {
+          case Some(theta) =>
+            // TODO : Unify with the rest of the clause
+            unify(q, body, theta)
+          case None => None
+        }
+      }
+    }
+  }
+
   def unify(a: Term, b: Term): Option[Theta] = {
-    unify(a, b, Map())
+    unify(a, b, Map[Variable, Term]())
   }
 
   def unify(a: Term, b: Term, theta: Theta): Option[Theta] = {
@@ -32,6 +56,14 @@ object Unification {
         if (functorLeft == functorRight)
           unifyList(argsLeft, argsRight, theta)
         else None
+    }
+  }
+
+  def unify(q: Term, body: List[Term], theta: Theta): Option[Theta] = body match {
+    case Nil => Some(theta)
+    case t :: ts => unify(q, t, theta) match {
+      case Some(newTheta) => unify(q, ts, newTheta)
+      case None => None
     }
   }
 
