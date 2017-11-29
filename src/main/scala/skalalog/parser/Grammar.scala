@@ -59,13 +59,22 @@ case class PrologSequence(left: Term, right: Term) extends Term {
 
 // Program and other key component
 case class Program(clauses: List[Clause])
+
 sealed trait Clause {
+
   val head: Either[Atom, CompoundTerm]
+
+  val arity: Int = head match {
+    case Left(_) => 0 // Atom
+    case Right(compoundTerm) => compoundTerm.arity
+  }
+
   val functor: Atom = head match {
     case Left(value) => value
     case Right(value) => value.atom
   }
 }
+
 case class Rule(head: Either[Atom, CompoundTerm], body: List[Term]) extends Clause
 case class Predicate(head: Either[Atom, CompoundTerm]) extends Clause
 
