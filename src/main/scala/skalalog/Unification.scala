@@ -7,27 +7,84 @@ object Unification {
   // type definition for theta, which is basically a map from variable to term...
   type Theta = Map[Variable, Term]
 
-  def unify(query: Query, clause: Clause): Option[Theta] = {
-    val q = query.question
-    clause match {
-      case Predicate(head) => head match {
-        case Left(atom) => q === atom
-        case Right(compoundTerm) => q === compoundTerm
-      }
-      case Rule(head, body) => head match {
-        case Left(atom) => q === atom match {
-          case Some(theta) =>
-            unify(q, body, theta)
-          case None => None
-        }
-        case Right(compoundTerm) => q === compoundTerm match {
-          case Some(theta) =>
-            unify(q, body, theta)
-          case None => None
-        }
+  val emptyTheta: Theta = Map[Variable, Term]()
+
+  def ask(query: Query)(implicit database: Program): Option[Theta] = {
+    if (query.clauses.isEmpty) {
+      askWithoutAdditionalClause(query)
+    } else {
+      // add the additional clauses to the database for processing
+      // TODO : check if this is working
+      ask(query.copy(clauses = query.clauses.tail))(database.copy(query.clauses.head :: database.clauses))
+    }
+  }
+
+  private def askWithoutAdditionalClause(query: Query)(implicit database: Program): Option[Theta] = {
+    val clauses = findClauses(query.question)
+    if (clauses.isEmpty) None
+    else {
+      // we proceed the clause in order they appear (very important !)
+      // For the moment we are only interested in find the truth about a predicate
+      // (does it solve or not) and not interested in finding all solutions and so on...
+      // (we do it later)
+      inner(clauses)
+    }
+
+    def inner(list: List[Clause]): Option[Theta] = list match {
+      case Nil => None
+      case c :: cs => processClause(query, c, emptyTheta) match {
+        case someTheta: Some[Theta] => someTheta
+        case None => inner(cs)
       }
     }
   }
+
+  private def processClause(query: Query, clause: Clause, theta: Theta)(implicit database: Program): Option[Theta] = {
+    clause match {
+      case rule: Rule => processRule(query, rule, theta)
+      case predicate: Predicate => processPredicate(query, predicate, theta)
+    }
+  }
+
+  private def processRule(query: Query, rule: Rule, theta: Theta)(implicit database: Program): Option[Theta] = {
+    ???
+  }
+
+  private def processPredicate(query: Query, predicate: Predicate, theta: Theta)(implicit database: Program): Option[Theta] = {
+    ???
+  }
+
+  /**
+    * Find the clauses of the current database that can be unified with term
+    *
+    * @param term     the Term to unify with potential clauses of the database
+    * @param database the current knowledge base of the interpreter
+    * @return all the clauses that can unify with term
+    */
+  private def findClauses(term: Term)(implicit database: Program): List[Clause] = {
+    database.clauses.filter { clause =>
+      clause.arity == term.arity && clause.functor == term.functor
+    }
+  }
+
+  def unify(term: Term, clause: Clause, theta: Theta)(implicit database: Program): Option[Theta] = {
+    ???
+  }
+
+  /*
+  // unify a term with a predicate, which is just the unification with the head of the predicate
+  def unify(term: Term, predicate: Predicate, theta: Theta)(implicit database: Program): Option[Theta] = {
+    predicate.head match {
+      case Left(atom) => unify(term, atom, theta)
+      case Right(compoundTerm) => unify(term, compoundTerm, theta)
+    }
+  }
+
+  // unify a term with a rule
+  // - first we have to unify the term with the head of the rule
+  // - then we use theta to unify the rest of the rules (body)
+  def unify(term: Term, rule: Rule, theta: Theta)(implicit database: Program): Option[Theta] = ???
+  */
 
   def unify(a: Term, b: Term): Option[Theta] = {
     unify(a, b, Map[Variable, Term]())
@@ -89,8 +146,6 @@ object Unification {
   }
 
   implicit class UnifiableTerm(term: Term) {
-    def ===(that: Term): Option[Theta] = unify(term, that)
-
     def contains(variable: Variable, theta: Theta): Boolean = term match {
       case _: Atom => false
       case selfV: Variable => selfV == variable
