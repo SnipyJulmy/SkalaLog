@@ -20,15 +20,6 @@ object Unification {
   }
 
   private def askWithoutAdditionalClause(query: Query)(implicit database: Program): Option[Theta] = {
-    val clauses = findClauses(query.question)
-    if (clauses.isEmpty) None
-    else {
-      // we proceed the clause in order they appear (very important !)
-      // For the moment we are only interested in find the truth about a predicate
-      // (does it solve or not) and not interested in finding all solutions and so on...
-      // (we do it later)
-      inner(clauses)
-    }
 
     def inner(list: List[Clause]): Option[Theta] = list match {
       case Nil => None
@@ -36,6 +27,20 @@ object Unification {
         case someTheta: Some[Theta] => someTheta
         case None => inner(cs)
       }
+    }
+
+    val clauses = findClauses(query.question)
+    if (clauses.isEmpty) {
+      println(s"ask : ${query.question}, got $None")
+      None
+    }
+    else {
+      // we proceed the clause in order they appear (very important !)
+      // For the moment we are only interested in find the truth about a predicate
+      // (does it solve or not) and not interested in finding all solutions and so on...
+      // (we do it later)
+      val res = inner(clauses)
+      res
     }
   }
 
@@ -46,12 +51,26 @@ object Unification {
     }
   }
 
-  private def processRule(query: Query, rule: Rule, theta: Theta)(implicit database: Program): Option[Theta] = {
-    ???
+  private def processPredicate(query: Query, predicate: Predicate, theta: Theta)(implicit database: Program): Option[Theta] = {
+    unify(query.question, predicate.headTerm)
   }
 
-  private def processPredicate(query: Query, predicate: Predicate, theta: Theta)(implicit database: Program): Option[Theta] = {
-    ???
+  private def processRule(query: Query, rule: Rule, theta: Theta)(implicit database: Program): Option[Theta] = {
+    unify(query.question, rule.headTerm) match {
+      case Some(newTheta) =>
+        processBody(rule.body, newTheta)
+      case None => None
+    }
+  }
+
+  private def processBody(terms: List[Term], theta: Theta)(implicit database: Program): Option[Theta] = terms match {
+    case Nil => Some(theta)
+    case t :: ts =>
+      ask(Query(Nil, t)) match {
+        case Some(newTheta) =>
+          processBody(ts, newTheta)
+        case None => None
+      }
   }
 
   /**
@@ -67,29 +86,11 @@ object Unification {
     }
   }
 
-  def unify(term: Term, clause: Clause, theta: Theta)(implicit database: Program): Option[Theta] = {
-    ???
-  }
-
-  /*
-  // unify a term with a predicate, which is just the unification with the head of the predicate
-  def unify(term: Term, predicate: Predicate, theta: Theta)(implicit database: Program): Option[Theta] = {
-    predicate.head match {
-      case Left(atom) => unify(term, atom, theta)
-      case Right(compoundTerm) => unify(term, compoundTerm, theta)
-    }
-  }
-
-  // unify a term with a rule
-  // - first we have to unify the term with the head of the rule
-  // - then we use theta to unify the rest of the rules (body)
-  def unify(term: Term, rule: Rule, theta: Theta)(implicit database: Program): Option[Theta] = ???
-  */
-
   def unify(a: Term, b: Term): Option[Theta] = {
     unify(a, b, Map[Variable, Term]())
   }
 
+  // TODO : match all the possible terms (double_number, emptyList,and so on)
   def unify(a: Term, b: Term, theta: Theta): Option[Theta] = {
     val t1 = find(a, theta)
     val t2 = find(b, theta)
@@ -150,6 +151,10 @@ object Unification {
       case _: Atom => false
       case selfV: Variable => selfV == variable
       case CompoundTerm(_, args) => args.contains(variable, theta)
+      case _: Number => false
+      case _: PrologList => ??? // TODO
+      case _: PrologString => false
+      case _: PrologSequence => ??? // TODO
     }
   }
 
